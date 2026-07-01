@@ -14,6 +14,7 @@ if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
 export type SessionPayload = {
   userId: string
   role: 'ADMIN' | 'SHOP_OWNER' | 'BARBER' | 'CUSTOMER'
+  status: 'PENDING' | 'ACTIVE' | 'SUSPENDED'
 }
 
 export async function hashPassword(password: string) {
@@ -66,6 +67,7 @@ export async function getSessionUser(req: NextRequest) {
       name: true,
       phone: true,
       role: true,
+      status: true,
       barberProfile: { select: { id: true, shopId: true } },
       shops: { select: { id: true } },
     },
