@@ -19,10 +19,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: 'Invalid email or password' }, { status: 401 })
     }
 
-    const token = signSession({ userId: user.id, role: user.role as any })
+    if (user.status === 'SUSPENDED') {
+      return NextResponse.json({
+        success: false,
+        message: 'Your account has been suspended. Please contact support.',
+      }, { status: 403 })
+    }
+
+    const token = signSession({ userId: user.id, role: user.role as any, status: user.status as any })
     const res = NextResponse.json({
       success: true,
-      data: { id: user.id, email: user.email, name: user.name, role: user.role },
+      data: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        status: user.status,
+      },
     })
     res.cookies.set(sessionCookieOptions().name, token, sessionCookieOptions())
     return res
