@@ -1,11 +1,10 @@
-generator client {
-  provider = "prisma-client-js"
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
-datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DATABASE_URL")
+generator client {
+  provider = "prisma-client-js"
 }
 
 enum Role {
@@ -36,55 +35,34 @@ enum JoinRequestStatus {
   REJECTED
 }
 
+// ─── USERS ────────────────────────────────────────────────────────────────
 model User {
-  id           String   @id
+  id           String   @id @default(cuid())
   email        String   @unique
-  phone        String?
+  phone        String?  @unique
   name         String
   passwordHash String
+  role         Role     @default(CUSTOMER)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  shops        Shop[]          @relation("ShopOwner")
   barberProfile BarberProfile?
-  ownedShops    Shop[]
-  appointments  Appointment[]  @relation("CustomerAppointments")
-  reviews       Review[]       @relation("AuthorReviews")
+  appointments Appointment[]   @relation("CustomerAppointments")
+  reviewsGiven Review[]        @relation("ReviewAuthor")
 }
 
-model BarberProfile {
-  id                  String   @id
-  userId              String   @unique
-  shopId              String?
-  bio                 String?
-  photoUrl            String?
-  skills              String[]
-  isAvailable         Boolean  @default(true)
-  isMobile            Boolean  @default(false)
-  baseLatitude        Float?
-  baseLongitude       Float?
-  travelRadiusKm      Int?
-  houseCallFeeInCents Int?
-  ratingAvg           Float?
-  ratingCount         Int      @default(0)
-
-  user              User               @relation(fields: [userId], references: [id])
-  shop              Shop?              @relation(fields: [shopId], references: [id])
-  services          Service[]
-  appointments      Appointment[]      @relation("BarberAppointments")
-  joinRequests      ShopJoinRequest[]
-  availabilityHours AvailabilityHour[]
-  reviews           Review[]           @relation("BarberReviews")
-}
-
+// ─── SHOPS (physical locations) ────────────────────────────────────────────
 model Shop {
-  id          String   @id
+  id          String   @id @default(cuid())
   ownerId     String
+  owner       User     @relation("ShopOwner", fields: [ownerId], references: [id])
   name        String
-  area        String?
-  address     String?
+  area        String
+  address     String
   latitude    Float?
   longitude   Float?
-  phone       String?
+  phone       String
   whatsapp    String?
   logoUrl     String?
   coverUrl    String?
@@ -92,109 +70,162 @@ model Shop {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
 
-  owner             User               @relation(fields: [ownerId], references: [id])
-  barbers           BarberProfile[]
-  services          Service[]
-  appointments      Appointment[]
-  joinRequests      ShopJoinRequest[]
-  availabilityHours AvailabilityHour[]
-  reviews           Review[]
+  barbers     BarberProfile[]
+  services    Service[]
+  hours       AvailabilityHour[]
+  appointments Appointment[]
+  reviews     Review[]
+  joinRequests ShopJoinRequest[]
 }
 
+// ─── SHOP JOIN REQUESTS (freelance/shop-less barber asks to join a shop) ──
 model ShopJoinRequest {
-  id        String            @id
+  id        String            @id @default(cuid())
   shopId    String
+  shop      Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
   barberId  String
+  barber    BarberProfile     @relation(fields: [barberId], references: [id], onDelete: Cascade)
   status    JoinRequestStatus @default(PENDING)
   message   String?
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
 
-  shop   Shop          @relation(fields: [shopId], references: [id])
-  barber BarberProfile @relation(fields: [barberId], references: [id])
+  @@unique([shopId, barberId, status])
 }
 
-model AvailabilityHour {
-  id        String  @id
-  shopId    String?
-  barberId  String?
-  dayOfWeek Int
-  openTime  String
-  closeTime String
-  isClosed  Boolean @default(false)
-
-  shop   Shop?          @relation(fields: [shopId], references: [id])
-  barber BarberProfile? @relation(fields: [barberId], references: [id])
-}
-
-model Service {
-  id              String  @id
+// ─── BARBERS (either attached to a shop, or freelance/mobile) ─────────────
+model BarberProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   shopId          String?
-  barberId        String?
-  name            String
-  description     String?
-  priceInCents    Int
-  durationMin     Int
-  allowsHouseCall Boolean @default(false)
-  isActive        Boolean @default(true)
+  shop            Shop?    @relation(fields: [shopId], references: [id], onDelete: SetNull)
+  bio             String?
+  photoUrl        String?
+  skills          String[]
+  isAvailable     Boolean  @default(true)
 
-  shop         Shop?          @relation(fields: [shopId], references: [id])
-  barber       BarberProfile? @relation(fields: [barberId], references: [id])
-  appointments Appointment[]
+  // Freelance / mobile / house-call support
+  isMobile        Boolean  @default(false)   // offers house calls
+  baseLatitude    Float?
+  baseLongitude   Float?
+  travelRadiusKm  Int?     @default(10)
+  houseCallFeeInCents Int  @default(0)       // flat callout fee added to service price
+
+  ratingAvg       Float    @default(0)
+  ratingCount     Int      @default(0)
+
+  services        Service[]
+  appointments    Appointment[] @relation("BarberAppointments")
+  hours           AvailabilityHour[]
+  reviews         Review[]
+  joinRequests    ShopJoinRequest[]
+
+  @@index([shopId])
+  @@index([isMobile])
 }
 
-model Appointment {
-  id                String            @id
-  customerId        String
-  barberId          String
-  serviceId         String
-  shopId            String?
-  isHouseCall       Boolean           @default(false)
-  houseCallAddress  String?
-  houseCallLat      Float?
-  houseCallLng      Float?
-  startTime         DateTime
-  endTime           DateTime
-  status            AppointmentStatus @default(PENDING)
-  totalPriceInCents Int
-  tipInCents        Int               @default(0)
-  smsReminderSentAt DateTime?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-
-  customer User          @relation("CustomerAppointments", fields: [customerId], references: [id])
-  barber   BarberProfile @relation("BarberAppointments", fields: [barberId], references: [id])
-  service  Service       @relation(fields: [serviceId], references: [id])
-  shop     Shop?         @relation(fields: [shopId], references: [id])
-  payment  Payment?
-  review   Review?
-}
-
-model Payment {
-  id            String        @id
-  appointmentId String        @unique
-  provider      String
-  providerRef   String?
-  amountInCents Int
-  status        PaymentStatus @default(PENDING)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-
-  appointment Appointment @relation(fields: [appointmentId], references: [id])
-}
-
-model Review {
-  id            String   @id
-  appointmentId String   @unique
-  authorId      String
-  barberId      String
+// ─── SERVICES (owned by a shop OR by a freelance barber) ──────────────────
+model Service {
+  id            String   @id @default(cuid())
   shopId        String?
-  rating        Int
+  shop          Shop?    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  barberId      String?
+  barber        BarberProfile? @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  name          String
+  description   String?
+  priceInCents  Int
+  durationMin   Int
+  allowsHouseCall Boolean @default(false)
+  isActive      Boolean  @default(true)
+
+  appointments  Appointment[]
+
+  @@index([shopId])
+  @@index([barberId])
+}
+
+// ─── AVAILABILITY (weekly hours, per shop or per freelance barber) ────────
+model AvailabilityHour {
+  id          String   @id @default(cuid())
+  shopId      String?
+  shop        Shop?    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  barberId    String?
+  barber      BarberProfile? @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  dayOfWeek   Int      // 0=Sun .. 6=Sat
+  openTime    String   // "08:00"
+  closeTime   String   // "18:00"
+  isClosed    Boolean  @default(false)
+
+  // A plain 3-column unique here wouldn't work: Postgres treats NULL != NULL,
+  // so a combined (shopId, barberId, dayOfWeek) unique would silently allow
+  // duplicate rows whenever shopId (or barberId) is null. Splitting into two
+  // uniques means each one only "sees" the rows where its column is set.
+  @@unique([shopId, dayOfWeek], name: "shop_day")
+  @@unique([barberId, dayOfWeek], name: "barber_day")
+}
+
+// ─── APPOINTMENTS ───────────────────────────────────────────────────────────
+model Appointment {
+  id            String            @id @default(cuid())
+  customerId    String
+  customer      User              @relation("CustomerAppointments", fields: [customerId], references: [id])
+  barberId      String
+  barber        BarberProfile     @relation("BarberAppointments", fields: [barberId], references: [id])
+  serviceId     String
+  service       Service           @relation(fields: [serviceId], references: [id])
+  shopId        String?
+  shop          Shop?             @relation(fields: [shopId], references: [id])
+
+  isHouseCall   Boolean           @default(false)
+  houseCallAddress String?
+  houseCallLat  Float?
+  houseCallLng  Float?
+
+  startTime     DateTime
+  endTime       DateTime
+  status        AppointmentStatus @default(PENDING)
+  totalPriceInCents Int
+  tipInCents    Int               @default(0)
+
+  payment       Payment?
+  review        Review?
+
+  smsReminderSentAt DateTime?
+
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([startTime])
+  @@index([barberId])
+  @@index([shopId])
+}
+
+// ─── PAYMENTS ───────────────────────────────────────────────────────────────
+model Payment {
+  id              String        @id @default(cuid())
+  appointmentId   String        @unique
+  appointment     Appointment   @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  provider        String        @default("stripe")
+  providerRef     String?       // stripe payment_intent id / checkout session id
+  amountInCents   Int
+  status          PaymentStatus @default(PENDING)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+// ─── REVIEWS ────────────────────────────────────────────────────────────────
+model Review {
+  id            String   @id @default(cuid())
+  appointmentId String   @unique
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  authorId      String
+  author        User     @relation("ReviewAuthor", fields: [authorId], references: [id])
+  barberId      String
+  barber        BarberProfile @relation(fields: [barberId], references: [id])
+  shopId        String?
+  shop          Shop?    @relation(fields: [shopId], references: [id])
+  rating        Int      // 1-5
   comment       String?
   createdAt     DateTime @default(now())
-
-  appointment Appointment   @relation(fields: [appointmentId], references: [id])
-  author      User          @relation("AuthorReviews", fields: [authorId], references: [id])
-  barber      BarberProfile @relation("BarberReviews", fields: [barberId], references: [id])
-  shop        Shop?         @relation(fields: [shopId], references: [id])
 }
