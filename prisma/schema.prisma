@@ -1,0 +1,202 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  SHOP_OWNER
+  BARBER
+  CUSTOMER
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELED
+  NO_SHOW
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum JoinRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id           String   @id
+  email        String   @unique
+  phone        String?
+  name         String
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  barberProfile BarberProfile?
+  ownedShops    Shop[]
+  joinRequests  ShopJoinRequest[]
+  appointments  Appointment[]    @relation("CustomerAppointments")
+  reviews       Review[]         @relation("AuthorReviews")
+}
+
+model BarberProfile {
+  id                  String   @id
+  userId              String   @unique
+  shopId              String?
+  bio                 String?
+  photoUrl            String?
+  skills              String[]
+  isAvailable         Boolean  @default(true)
+  isMobile            Boolean  @default(false)
+  baseLatitude        Float?
+  baseLongitude       Float?
+  travelRadiusKm      Int?
+  houseCallFeeInCents Int?
+  ratingAvg           Float?
+  ratingCount         Int      @default(0)
+
+  user              User               @relation(fields: [userId], references: [id])
+  shop              Shop?              @relation(fields: [shopId], references: [id])
+  services          Service[]
+  appointments      Appointment[]      @relation("BarberAppointments")
+  joinRequests      ShopJoinRequest[]
+  availabilityHours AvailabilityHour[]
+  reviews           Review[]           @relation("BarberReviews")
+}
+
+model Shop {
+  id          String   @id
+  ownerId     String
+  name        String
+  area        String?
+  address     String?
+  latitude    Float?
+  longitude   Float?
+  phone       String?
+  whatsapp    String?
+  logoUrl     String?
+  coverUrl    String?
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  owner             User               @relation(fields: [ownerId], references: [id])
+  barbers           BarberProfile[]
+  services          Service[]
+  appointments      Appointment[]
+  joinRequests      ShopJoinRequest[]
+  availabilityHours AvailabilityHour[]
+  reviews           Review[]
+}
+
+model ShopJoinRequest {
+  id        String            @id
+  shopId    String
+  barberId  String
+  status    JoinRequestStatus @default(PENDING)
+  message   String?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  shop   Shop          @relation(fields: [shopId], references: [id])
+  barber BarberProfile @relation(fields: [barberId], references: [id])
+  user   User          @relation(fields: [barberId], references: [id])
+}
+
+model AvailabilityHour {
+  id        String  @id
+  shopId    String?
+  barberId  String?
+  dayOfWeek Int
+  openTime  String
+  closeTime String
+  isClosed  Boolean @default(false)
+
+  shop   Shop?          @relation(fields: [shopId], references: [id])
+  barber BarberProfile? @relation(fields: [barberId], references: [id])
+}
+
+model Service {
+  id              String  @id
+  shopId          String?
+  barberId        String?
+  name            String
+  description     String?
+  priceInCents    Int
+  durationMin     Int
+  allowsHouseCall Boolean @default(false)
+  isActive        Boolean @default(true)
+
+  shop         Shop?          @relation(fields: [shopId], references: [id])
+  barber       BarberProfile? @relation(fields: [barberId], references: [id])
+  appointments Appointment[]
+}
+
+model Appointment {
+  id                String            @id
+  customerId        String
+  barberId          String
+  serviceId         String
+  shopId            String?
+  isHouseCall       Boolean           @default(false)
+  houseCallAddress  String?
+  houseCallLat      Float?
+  houseCallLng      Float?
+  startTime         DateTime
+  endTime           DateTime
+  status            AppointmentStatus @default(PENDING)
+  totalPriceInCents Int
+  tipInCents        Int               @default(0)
+  smsReminderSentAt DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  customer User          @relation("CustomerAppointments", fields: [customerId], references: [id])
+  barber   BarberProfile @relation("BarberAppointments", fields: [barberId], references: [id])
+  service  Service       @relation(fields: [serviceId], references: [id])
+  shop     Shop?         @relation(fields: [shopId], references: [id])
+  payment  Payment?
+  review   Review?
+}
+
+model Payment {
+  id            String        @id
+  appointmentId String        @unique
+  provider      String
+  providerRef   String?
+  amountInCents Int
+  status        PaymentStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id])
+}
+
+model Review {
+  id            String   @id
+  appointmentId String   @unique
+  authorId      String
+  barberId      String
+  shopId        String?
+  rating        Int
+  comment       String?
+  createdAt     DateTime @default(now())
+
+  appointment Appointment   @relation(fields: [appointmentId], references: [id])
+  author      User          @relation("AuthorReviews", fields: [authorId], references: [id])
+  barber      BarberProfile @relation("BarberReviews", fields: [barberId], references: [id])
+  shop        Shop?         @relation(fields: [shopId], references: [id])
+}
