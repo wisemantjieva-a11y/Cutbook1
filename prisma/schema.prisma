@@ -47,9 +47,8 @@ model User {
 
   barberProfile BarberProfile?
   ownedShops    Shop[]
-  joinRequests  ShopJoinRequest[]
-  appointments  Appointment[]    @relation("CustomerAppointments")
-  reviews       Review[]         @relation("AuthorReviews")
+  appointments  Appointment[]  @relation("CustomerAppointments")
+  reviews       Review[]       @relation("AuthorReviews")
 }
 
 model BarberProfile {
@@ -113,7 +112,6 @@ model ShopJoinRequest {
 
   shop   Shop          @relation(fields: [shopId], references: [id])
   barber BarberProfile @relation(fields: [barberId], references: [id])
-  user   User          @relation(fields: [barberId], references: [id])
 }
 
 model AvailabilityHour {
