@@ -7,7 +7,7 @@ type AllowedRole = typeof allowedRoles[number]
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, phone, name, password, role, isMobileBarber } = await req.json()
+    const { email, phone, name, password, role, isMobile } = await req.json()
 
     if (!email || !name || !password) {
       return NextResponse.json({ success: false, message: 'email, name, and password are required' }, { status: 400 })
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       await prisma.barberProfile.create({
         data: {
           userId: user.id,
-          isMobileBarber: isMobileBarber === true,
+          isMobile: isMobile === true,
         },
       })
     }
