@@ -13,9 +13,8 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.658.0",
-    "@aws-sdk/s3-request-presigner": "^3.658.0",
     "@prisma/client": "^5.20.0",
+    "@vercel/blob": "^0.27.1",
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
     "next": "^14.2.0",
