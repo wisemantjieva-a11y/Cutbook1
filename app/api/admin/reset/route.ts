@@ -11,10 +11,18 @@ export async function POST(req: NextRequest) {
     if (!email) {
       return NextResponse.json({ success: false, message: 'email required' }, { status: 400 })
     }
-    const user = await prisma.user.findUnique({ where: { email }, include: { barberProfile: true } })
+    const user = await prisma.user.findUnique({
+      where: { email },
+      include: { barberProfile: true, shops: true }
+    })
     if (!user) {
       return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 })
     }
+    // Delete shops (cascade will handle related records via FK)
+    for (const shop of user.shops) {
+      await prisma.shop.delete({ where: { id: shop.id } })
+    }
+    // Delete barber profile
     if (user.barberProfile) {
       await prisma.barberProfile.delete({ where: { userId: user.id } })
     }
