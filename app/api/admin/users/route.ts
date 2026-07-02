@@ -8,23 +8,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
   }
 
-  const [users, stats] = await Promise.all([
+  const [users, stats, totalCustomers] = await Promise.all([
     prisma.user.findMany({
       where: { role: { in: ['SHOP_OWNER', 'BARBER'] } },
       orderBy: { createdAt: 'desc' },
       select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        role: true,
-        status: true,
-        subscriptionStatus: true,
-        subscriptionPaidUntil: true,
-        approvedAt: true,
-        suspendedAt: true,
-        suspendReason: true,
-        createdAt: true,
+        id: true, name: true, email: true, phone: true, role: true,
+        status: true, subscriptionStatus: true, subscriptionPaidUntil: true,
+        approvedAt: true, suspendedAt: true, suspendReason: true, createdAt: true,
       },
     }),
     prisma.user.groupBy({
@@ -32,17 +23,13 @@ export async function GET(req: NextRequest) {
       where: { role: { in: ['SHOP_OWNER', 'BARBER'] } },
       _count: true,
     }),
+    prisma.user.count({ where: { role: 'CUSTOMER' } }),
   ])
 
   const summary = {
-    totalBarbers: 0,
-    activeBarbers: 0,
-    pendingBarbers: 0,
-    suspendedBarbers: 0,
-    totalShopOwners: 0,
-    activeShopOwners: 0,
-    pendingShopOwners: 0,
-    suspendedShopOwners: 0,
+    totalBarbers: 0, activeBarbers: 0, pendingBarbers: 0, suspendedBarbers: 0,
+    totalShopOwners: 0, activeShopOwners: 0, pendingShopOwners: 0, suspendedShopOwners: 0,
+    totalCustomers,
   }
 
   for (const row of stats) {
