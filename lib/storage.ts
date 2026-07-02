@@ -16,6 +16,9 @@ export async function uploadToBlob(opts: {
   if (!storageConfigured()) throw new Error('Image uploads are not configured.')
   const safeName = opts.fileName.replace(/[^a-zA-Z0-9._-]/g, '_')
   const pathname = `${opts.kind}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}`
-  const blob = await put(pathname, opts.file, { access: 'public', contentType: opts.contentType })
-  return blob.url
+  const blob = await put(pathname, opts.file, {
+    access: 'private',
+    contentType: opts.contentType,
+  })
+  return blob.downloadUrl || blob.url
 }
