@@ -13,16 +13,18 @@ export async function apiFetch(path: string, opts: RequestInit = {}) {
 
 export const money = (cents: number) => `N$${(cents / 100).toFixed(2)}`
 
-/** Uploads a File directly to object storage via a presigned URL. Returns the public URL. */
+/** Uploads a File to Vercel Blob via the server-side upload endpoint. Returns the public URL. */
 export async function uploadImage(kind: 'shop-logo' | 'shop-cover' | 'barber-photo', file: File) {
-  const presign = await apiFetch('/api/uploads/presign', {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('kind', kind)
+
+  const res = await fetch('/api/uploads/presign', {
     method: 'POST',
-    body: JSON.stringify({ kind, fileName: file.name, contentType: file.type }),
+    credentials: 'include',
+    body: formData, // browser sets Content-Type with boundary automatically
   })
-  const { uploadUrl, publicUrl } = presign.data
-
-  const res = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
-  if (!res.ok) throw new Error('Upload failed')
-
-  return publicUrl as string
+  const json = await res.json().catch(() => ({ success: false, message: 'Invalid server response' }))
+  if (!res.ok) throw new Error(json.message || `Upload failed (${res.status})`)
+  return json.data.url as string
 }
