@@ -1,38 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionUser } from '@/lib/auth'
-import { storageConfigured, uploadToBlob, UploadKind } from '@/lib/storage'
+import { uploadToBlob, storageConfigured } from '@/lib/storage'
 
-const ALLOWED_KINDS: UploadKind[] = ['shop-logo', 'shop-cover', 'barber-photo']
+const ALLOWED_KINDS = ['shop-logo', 'shop-cover', 'barber-photo']
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_SIZE = 5 * 1024 * 1024 // 5 MB
 
-// POST /api/uploads/presign  (multipart/form-data: file, kind)
+// POST /api/uploads/presign  multipart/form-data: { file: File, kind: string }
 export async function POST(req: NextRequest) {
   const user = await getSessionUser(req)
   if (!user) return NextResponse.json({ success: false, message: 'Login required' }, { status: 401 })
 
   if (!storageConfigured()) {
     return NextResponse.json(
-      { success: false, message: 'Image uploads are not configured. Add BLOB_READ_WRITE_TOKEN to Vercel env vars.' },
+      { success: false, message: 'Image uploads are not configured.' },
       { status: 503 }
     )
   }
 
-  const formData = await req.formData()
-  const file = formData.get('file') as File | null
-  const kind = formData.get('kind') as string | null
+  const form = await req.formData()
+  const file = form.get('file') as File | null
+  const kind = form.get('kind') as string | null
 
-  if (!file) return NextResponse.json({ success: false, message: 'No file provided' }, { status: 400 })
-  if (!kind || !ALLOWED_KINDS.includes(kind as UploadKind)) {
+  if (!file || !kind) {
+    return NextResponse.json({ success: false, message: 'file and kind are required' }, { status: 400 })
+  }
+  if (!ALLOWED_KINDS.includes(kind)) {
     return NextResponse.json({ success: false, message: `kind must be one of ${ALLOWED_KINDS.join(', ')}` }, { status: 400 })
   }
   if (!ALLOWED_TYPES.includes(file.type)) {
     return NextResponse.json({ success: false, message: 'Only JPEG, PNG, or WebP images are allowed' }, { status: 400 })
   }
   if (file.size > MAX_SIZE) {
-    return NextResponse.json({ success: false, message: 'File must be under 5 MB' }, { status: 400 })
+    return NextResponse.json({ success: false, message: 'File too large (max 5 MB)' }, { status: 400 })
   }
 
-  const url = await uploadToBlob({ kind: kind as UploadKind, file, fileName: file.name, contentType: file.type })
+  const url = await uploadToBlob({ kind: kind as any, file, fileName: file.name, contentType: file.type })
   return NextResponse.json({ success: true, data: { url } })
 }
