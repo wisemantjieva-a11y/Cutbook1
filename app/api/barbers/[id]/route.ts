@@ -10,7 +10,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       shop: true,
       services: { where: { isActive: true } },
       hours: true,
-      reviews: { orderBy: { createdAt: 'desc' }, take: 20, include: { author: { select: { name: true } } } },
+      reviews: { orderBy: { createdAt: 'desc' }, take: 20 },
     },
   })
   if (!barber) return NextResponse.json({ success: false, message: 'Barber not found' }, { status: 404 })
