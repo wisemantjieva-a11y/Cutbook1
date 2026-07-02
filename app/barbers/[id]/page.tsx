@@ -61,7 +61,7 @@ export default function BarberDetail({ params }: { params: { id: string } }) {
               {barber.reviews.map((r: any) => (
                 <div key={r.id} className="card">
                   <div>{'⭐'.repeat(r.rating)}</div>
-                  <div className="muted">{r.author.name}</div>
+                  <div className="muted">Anonymous</div>
                   {r.comment && <div style={{ marginTop: 4 }}>{r.comment}</div>}
                 </div>
               ))}
