@@ -52,9 +52,11 @@ export default function Dashboard() {
     return true
   })
 
-  const revenue = bookings
-    .filter((b) => new Date(b.startTime).toDateString() === today && b.status === 'COMPLETED')
-    .reduce((sum, b) => sum + b.totalPriceInCents, 0)
+  const completedToday = bookings.filter(
+    (b) => new Date(b.startTime).toDateString() === today && b.status === 'COMPLETED'
+  )
+  const revenue = completedToday.reduce((sum, b) => sum + b.totalPriceInCents, 0)
+  const tips = completedToday.reduce((sum, b) => sum + (b.tipInCents || 0), 0)
 
   return (
     <div className="container">
@@ -77,6 +79,23 @@ export default function Dashboard() {
             </button>
           </div>
         </div>
+
+        {me.role === 'BARBER' && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginTop: 12 }}>
+            <div className="card" style={{ background: 'rgba(255,255,255,.15)', border: 'none', color: 'white', textAlign: 'center' }}>
+              <div style={{ fontSize: 18, fontWeight: 600 }}>{money(revenue)}</div>
+              <div className="muted" style={{ color: 'rgba(255,255,255,.75)' }}>Today's earnings</div>
+            </div>
+            <div className="card" style={{ background: 'rgba(255,255,255,.15)', border: 'none', color: 'white', textAlign: 'center' }}>
+              <div style={{ fontSize: 18, fontWeight: 600 }}>{completedToday.length}</div>
+              <div className="muted" style={{ color: 'rgba(255,255,255,.75)' }}>Cuts done</div>
+            </div>
+            <div className="card" style={{ background: 'rgba(255,255,255,.15)', border: 'none', color: 'white', textAlign: 'center' }}>
+              <div style={{ fontSize: 18, fontWeight: 600 }}>{money(tips)}</div>
+              <div className="muted" style={{ color: 'rgba(255,255,255,.75)' }}>Tips</div>
+            </div>
+          </div>
+        )}
 
         {queue && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginTop: 12 }}>
