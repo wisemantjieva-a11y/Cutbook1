@@ -23,7 +23,7 @@ now lives in one Next.js app with one Prisma schema that supports both business 
   automatically.
 - **Owner/barber dashboard**: real bookings pulled from the database (no more mock data), status changes
   (confirm/complete/no-show/cancel), and the live queue/wait-time estimator (now scoped per shop).
-- **Real availability**: shops and freelance barbers each set weekly business hours; the booking page
+- **Real availability**: shops and freelance barbers each set weekly business hours; voring page
   shows an actual grid of open slots (computed from hours + existing bookings), and the API rejects any
   booking attempt outside business hours or that double-books a barber.
 - **Shop join flow**: a shop-less barber can browse shops and send a join request; the shop owner sees
@@ -33,9 +33,22 @@ now lives in one Next.js app with one Prisma schema that supports both business 
   to deactivate a shop or suspend a barber.
 - **Day-of SMS reminders**: `/api/cron/reminders` finds confirmed appointments starting within the next
   hour that haven't been reminded yet and texts the customer. Wired for Vercel Cron (`vercel.json`,
-  every 15 min) — works with any scheduler that can hit a URL, e.g. cron-job.org, if you're not on Vercel.
+  every 15 min) - works* with any scheduler that can hit a URL, e.g. cron-job.org, if you're not on Vercel.
 - **Photo uploads**: shop logo/cover and barber profile photo upload directly to S3-compatible storage
   via presigned URLs (works with AWS S3, Cloudflare R2, or Backblaze B2).
+- **Barbershop & salon categories**: every shop and freelance stylist can tag themselves as
+  Barbershop, Salon, or Both — shown as a badge on listings, and filterable from the home screen
+  (All / Barbers / Salons). Nothing else about the booking flow changes; a salon just lists
+  services like "Box Braids" or "Wash & Blow Dry" the same way a barbershop lists "Skin Fade."
+  Internal wording was updated from "barber" to "stylist" throughout the customer-facing UI, though
+  the underlying code/API still says `barber` internally (renaming that would've been a lot of
+  churn for zero functional benefit — cosmetic only, doesn't affect you).
+- **Platform subscriptions**: every shop and every shop-less freelance stylist gets a trial that runs
+  until the end of the current calendar month. After that, `/admin/subscriptions` is where you track
+  who's trialing, who's paid, and who's overdue — record a payment there (any method: EFT, cash,
+  WhatsApp) and it marks them active and extends their paid-through date by a month. No card details or
+  automated billing involved; this is a manual ledger, by design, since that's how you're collecting for
+  now.
 
 ## What still needs your own credentials to go fully live
 
@@ -79,8 +92,9 @@ npm run dev
 
 Seeded logins (password for all: `password123`):
 - `admin@cutbook.com` — admin panel access at `/admin`
-- `owner@classiccutz.com` — shop owner (Classic Cutz, 2 barbers, 3 services, hours set, and one pending
-  join request waiting in Settings)
+- `owner@classiccutz.com` — barbershop owner (Classic Cutz, 2 barbers, 3 services, hours set, and one
+  pending join request waiting in Settings)
+- `owner@glambar.com` — salon owner (Glam Bar, category = Salon, 1 stylist, hours set)
 - `moses@freelance.com` — freelance/mobile barber offering house calls, with hours set
 - `thomas@freelance.com` — shop-less freelance barber who can browse shops and request to join one
 - `ndapewa@client.com` — customer with one shop booking + one house-call booking
@@ -103,5 +117,5 @@ and put the CLI's printed signing secret into `STRIPE_WEBHOOK_SECRET`.
 ## Old files to remove
 
 Once you're happy with this, delete the old `cutbook-backend` Express folder and the old mock
-`src/pages/OwnerApp.jsx` / `src/pages/Home.jsx` etc. React app — they're superseded by this project and
+`src/pages/OwnerApp.jsx` / `src/pages/Home.jsx` etc. React app - they're superseded by this project and
 kept around would just cause confusion again.
