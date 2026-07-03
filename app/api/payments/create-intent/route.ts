@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth'
 import { createCheckoutSession, stripeConfigured } from '@/lib/payments'
 
+export const dynamic = 'force-dynamic'
+
 // POST /api/payments/create-intent  { appointmentId }
 export async function POST(req: NextRequest) {
   const user = await getSessionUser(req)
