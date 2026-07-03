@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSessionUser } from '@/lib/auth'
 import { createPresignedUpload, storageConfigured } from '@/lib/storage'
 
+export const dynamic = 'force-dynamic'
+
 const ALLOWED_KINDS = ['shop-logo', 'shop-cover', 'barber-photo']
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_NAME_LEN = 200
