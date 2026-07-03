@@ -4,6 +4,8 @@ import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { apiFetch, money } from '@/lib/api'
 
+export const dynamic = 'force-dynamic'
+
 export default function Confirmation({ params }: { params: { id: string } }) {
   const searchParams = useSearchParams()
   const [bookings, setBookings] = useState<any[]>([])
