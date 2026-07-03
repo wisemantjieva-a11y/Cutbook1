@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth'
 
+export const dynamic = 'force-dynamic'
+
 // POST /api/shops/:id/join-requests  { message? }  — must be logged in as a barber
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const user = await getSessionUser(req)
