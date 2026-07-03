@@ -1,9 +1,16 @@
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 
+function endOfCurrentMonth(): Date {
+  const now = new Date()
+  return new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+}
+
 const prisma = new PrismaClient()
 
 async function main() {
+  await prisma.subscriptionPayment.deleteMany()
+  await prisma.platformSubscription.deleteMany()
   await prisma.review.deleteMany()
   await prisma.payment.deleteMany()
   await prisma.appointment.deleteMany()
@@ -34,6 +41,10 @@ async function main() {
       description: 'Fades, beard sculpting, and full grooms in the heart of Hakahana.',
       latitude: -22.5514,
       longitude: 17.0908,
+      category: 'BARBERSHOP',
+      subscription: {
+        create: { trialEndsAt: endOfCurrentMonth(), monthlyFeeInCents: 30000 },
+      },
     },
   })
 
@@ -86,6 +97,9 @@ async function main() {
       houseCallFeeInCents: 15000,
       ratingAvg: 4.9,
       ratingCount: 12,
+      subscription: {
+        create: { trialEndsAt: endOfCurrentMonth(), monthlyFeeInCents: 15000 },
+      },
     },
   })
   const mosesHaircut = await prisma.service.create({
@@ -113,6 +127,48 @@ async function main() {
   await prisma.shopJoinRequest.create({
     data: { shopId: shop.id, barberId: thomas.id, message: 'Hi! I used to cut at Fresh Fadez, would love a chair here.' },
   })
+
+  // ── A salon (proves the barbershop/salon/both category system) ─────────
+  const salonOwnerUser = await prisma.user.create({
+    data: { email: 'owner@glambar.com', name: 'Glam Bar Owner', passwordHash: pw, role: 'SHOP_OWNER', phone: '+264812000001' },
+  })
+  const salon = await prisma.shop.create({
+    data: {
+      ownerId: salonOwnerUser.id,
+      name: 'Glam Bar',
+      area: 'Klein Windhoek',
+      address: '22 Nelson Mandela Ave',
+      phone: '+264812345678',
+      description: 'Hair, nails, and braiding — walk-ins welcome.',
+      category: 'SALON',
+      latitude: -22.5580,
+      longitude: 17.0940,
+      subscription: { create: { trialEndsAt: endOfCurrentMonth(), monthlyFeeInCents: 30000 } },
+    },
+  })
+  const salonStylistUser = await prisma.user.create({
+    data: { email: 'aina@glambar.com', name: 'Aina S.', passwordHash: pw, role: 'BARBER', phone: '+264812111111' },
+  })
+  const salonStylist = await prisma.barberProfile.create({
+    data: {
+      userId: salonStylistUser.id, shopId: salon.id, category: 'SALON',
+      bio: 'Braiding, weaves, and silk press specialist', skills: ['Braids', 'Weave', 'Silk Press'],
+      ratingAvg: 4.7, ratingCount: 21,
+    },
+  })
+  await prisma.service.create({
+    data: { shopId: salon.id, name: 'Box Braids', description: 'Medium-length box braids', priceInCents: 45000, durationMin: 240 },
+  })
+  await prisma.service.create({
+    data: { shopId: salon.id, name: 'Wash & Blow Dry', priceInCents: 15000, durationMin: 45 },
+  })
+  await prisma.$transaction(
+    Array.from({ length: 7 }, (_, dayOfWeek) =>
+      prisma.availabilityHour.create({
+        data: { shopId: salon.id, dayOfWeek, openTime: '09:00', closeTime: '19:00', isClosed: dayOfWeek === 0 },
+      })
+    )
+  )
 
   // ── Customer + sample bookings ──────────────────────────────────────────
   const customer = await prisma.user.create({
@@ -146,10 +202,12 @@ async function main() {
     },
   })
 
-  console.log('🌱 Seeded: 1 shop (with hours), 2 shop barbers, 1 freelance/mobile barber (with hours),')
-  console.log('   1 shop-less barber with a pending join request, services, and sample bookings.')
+  console.log('🌱 Seeded: 1 barbershop + 1 salon (both with hours), 2 shop barbers, 1 salon stylist,')
+  console.log('   1 freelance/mobile barber (with hours), 1 shop-less barber with a pending join request,')
+  console.log('   services, and sample bookings.')
   console.log('   Login as admin@cutbook.com / password123 (admin)')
-  console.log('   Login as owner@classiccutz.com / password123 (shop owner — see the pending join request in Settings)')
+  console.log('   Login as owner@classiccutz.com / password123 (barbershop owner — see the pending join request in Settings)')
+  console.log('   Login as owner@glambar.com / password123 (salon owner)')
   console.log('   Login as moses@freelance.com / password123 (freelance/mobile barber)')
   console.log('   Login as thomas@freelance.com / password123 (shop-less barber who can browse & request to join)')
   console.log('   Login as ndapewa@client.com / password123 (customer)')
