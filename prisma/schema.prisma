@@ -49,6 +49,7 @@ enum BusinessCategory {
   BOTH
 }
 
+// ─── USERS ────────────────────────────────────────────────────────────────
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -66,6 +67,7 @@ model User {
   subscriptionPaymentsRecorded SubscriptionPayment[] @relation("PaymentRecordedBy")
 }
 
+// ─── SHOPS (physical locations) ────────────────────────────────────────────
 model Shop {
   id          String   @id @default(cuid())
   ownerId     String
@@ -93,6 +95,7 @@ model Shop {
   subscription PlatformSubscription?
 }
 
+// ─── SHOP JOIN REQUESTS (freelance/shop-less barber asks to join a shop) ──
 model ShopJoinRequest {
   id        String            @id @default(cuid())
   shopId    String
@@ -107,6 +110,7 @@ model ShopJoinRequest {
   @@unique([shopId, barberId, status])
 }
 
+// ─── BARBERS (either attached to a shop, or freelance/mobile) ─────────────
 model BarberProfile {
   id              String   @id @default(cuid())
   userId          String   @unique
@@ -118,11 +122,14 @@ model BarberProfile {
   category        BusinessCategory @default(BARBERSHOP)
   skills          String[]
   isAvailable     Boolean  @default(true)
-  isMobile        Boolean  @default(false)
+
+  // Freelance / mobile / house-call support
+  isMobile        Boolean  @default(false)   // offers house calls
   baseLatitude    Float?
   baseLongitude   Float?
   travelRadiusKm  Int?     @default(10)
-  houseCallFeeInCents Int  @default(0)
+  houseCallFeeInCents Int  @default(0)       // flat callout fee added to service price
+
   ratingAvg       Float    @default(0)
   ratingCount     Int      @default(0)
 
@@ -137,6 +144,7 @@ model BarberProfile {
   @@index([isMobile])
 }
 
+// ─── SERVICES (owned by a shop OR by a freelance barber) ──────────────────
 model Service {
   id            String   @id @default(cuid())
   shopId        String?
@@ -156,21 +164,27 @@ model Service {
   @@index([barberId])
 }
 
+// ─── AVAILABILITY (weekly hours, per shop or per freelance barber) ────────
 model AvailabilityHour {
   id          String   @id @default(cuid())
   shopId      String?
   shop        Shop?    @relation(fields: [shopId], references: [id], onDelete: Cascade)
   barberId    String?
   barber      BarberProfile? @relation(fields: [barberId], references: [id], onDelete: Cascade)
-  dayOfWeek   Int
-  openTime    String
-  closeTime   String
+  dayOfWeek   Int      // 0=Sun .. 6=Sat
+  openTime    String   // "08:00"
+  closeTime   String   // "18:00"
   isClosed    Boolean  @default(false)
 
+  // A plain 3-column unique here wouldn't work: Postgres treats NULL != NULL,
+  // so a combined (shopId, barberId, dayOfWeek) unique would silently allow
+  // duplicate rows whenever shopId (or barberId) is null. Splitting into two
+  // uniques means each one only "sees" the rows where its column is set.
   @@unique([shopId, dayOfWeek], name: "shop_day")
   @@unique([barberId, dayOfWeek], name: "barber_day")
 }
 
+// ─── APPOINTMENTS ───────────────────────────────────────────────────────────
 model Appointment {
   id            String            @id @default(cuid())
   customerId    String
@@ -181,18 +195,23 @@ model Appointment {
   service       Service           @relation(fields: [serviceId], references: [id])
   shopId        String?
   shop          Shop?             @relation(fields: [shopId], references: [id])
+
   isHouseCall   Boolean           @default(false)
   houseCallAddress String?
   houseCallLat  Float?
   houseCallLng  Float?
+
   startTime     DateTime
   endTime       DateTime
   status        AppointmentStatus @default(PENDING)
   totalPriceInCents Int
   tipInCents    Int               @default(0)
+
   payment       Payment?
   review        Review?
+
   smsReminderSentAt DateTime?
+
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 
@@ -201,18 +220,20 @@ model Appointment {
   @@index([shopId])
 }
 
+// ─── PAYMENTS ───────────────────────────────────────────────────────────────
 model Payment {
   id              String        @id @default(cuid())
   appointmentId   String        @unique
   appointment     Appointment   @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
   provider        String        @default("stripe")
-  providerRef     String?
+  providerRef     String?       // stripe payment_intent id / checkout session id
   amountInCents   Int
   status          PaymentStatus @default(PENDING)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 }
 
+// ─── REVIEWS ────────────────────────────────────────────────────────────────
 model Review {
   id            String   @id @default(cuid())
   appointmentId String   @unique
@@ -223,11 +244,15 @@ model Review {
   barber        BarberProfile @relation(fields: [barberId], references: [id])
   shopId        String?
   shop          Shop?    @relation(fields: [shopId], references: [id])
-  rating        Int
+  rating        Int      // 1-5
   comment       String?
   createdAt     DateTime @default(now())
 }
 
+// ─── PLATFORM SUBSCRIPTIONS (what shops/freelance barbers pay CutBook) ────
+// One shop = one subscription (covers all its barbers). One shop-less
+// freelance barber = their own subscription. Billing is tracked here, not
+// automated — payments are recorded manually by an admin (EFT/cash/etc).
 model PlatformSubscription {
   id                String             @id @default(cuid())
   shopId            String?            @unique
@@ -249,7 +274,7 @@ model SubscriptionPayment {
   subscriptionId String
   subscription   PlatformSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
   amountInCents  Int
-  method         String
+  method         String               // 'cash' | 'eft' | 'whatsapp' | 'other'
   note           String?
   recordedById   String
   recordedBy     User                 @relation("PaymentRecordedBy", fields: [recordedById], references: [id])
