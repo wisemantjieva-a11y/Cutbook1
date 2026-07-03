@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth'
 
+export const dynamic = 'force-dynamic'
+
 const ALLOWED_STATUSES = ['CONFIRMED', 'COMPLETED', 'CANCELED', 'NO_SHOW']
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
