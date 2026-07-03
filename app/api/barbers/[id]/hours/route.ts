@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const hours = await prisma.availabilityHour.findMany({ where: { barberId: params.id }, orderBy: { dayOfWeek: 'asc' } })
   return NextResponse.json({ success: true, data: hours })
