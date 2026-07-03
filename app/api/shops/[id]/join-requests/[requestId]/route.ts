@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth'
 
+export const dynamic = 'force-dynamic'
+
 // PATCH /api/shops/:id/join-requests/:requestId  { decision: 'APPROVED' | 'REJECTED' }
 export async function PATCH(req: NextRequest, { params }: { params: { id: string; requestId: string } }) {
   const user = await getSessionUser(req)
