@@ -1,12 +1,11 @@
 'use client'
+import { Suspense } from 'react'
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
 
-export const dynamic = 'force-dynamic'
-
-export default function Login() {
+function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
@@ -51,5 +50,13 @@ export default function Login() {
         No account? <Link href="/register" style={{ color: 'var(--green)' }}>Register</Link>
       </p>
     </div>
+  )
+}
+
+export default function Login() {
+  return (
+    <Suspense fallback={<div className="container p-1"><div className="center" style={{ marginTop: '4rem' }}>Loading…</div></div>}>
+      <LoginForm />
+    </Suspense>
   )
 }
