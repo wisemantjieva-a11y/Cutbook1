@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAvailableSlots } from '@/lib/availability'
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/barbers/:id/slots?date=YYYY-MM-DD&serviceId=xxx
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const { searchParams } = new URL(req.url)
