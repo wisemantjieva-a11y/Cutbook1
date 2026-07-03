@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser, requireRole } from '@/lib/auth'
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/shops?area=Khomasdal&q=fade
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
