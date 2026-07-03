@@ -28,7 +28,7 @@ export default function ShopDetail({ params }: { params: { id: string } }) {
       <div className="p-1">
         {shop.description && <p className="muted">{shop.description}</p>}
 
-        <h3>Barbers</h3>
+        <h3>Stylists</h3>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '1rem' }}>
           {shop.barbers.map((b: any) => (
             <button
