@@ -15,8 +15,8 @@ export default function Settings() {
   const [error, setError] = useState('')
   const [saved, setSaved] = useState('')
 
-  const [shopForm, setShopForm] = useState({ name: '', area: '', address: '', phone: '', description: '' })
-  const [barberForm, setBarberForm] = useState({ bio: '', isMobile: true, houseCallFeeInCents: 0, travelRadiusKm: 10, baseLatitude: '', baseLongitude: '' })
+  const [shopForm, setShopForm] = useState({ name: '', area: '', address: '', phone: '', description: '', category: 'BARBERSHOP' })
+  const [barberForm, setBarberForm] = useState({ bio: '', category: 'BARBERSHOP', isMobile: true, houseCallFeeInCents: 0, travelRadiusKm: 10, baseLatitude: '', baseLongitude: '' })
   const [svc, setSvc] = useState({ name: '', priceInCents: 0, durationMin: 30, allowsHouseCall: false })
 
   async function loadAll() {
@@ -35,6 +35,7 @@ export default function Settings() {
       setBarber(b.data)
       setBarberForm({
         bio: b.data.bio || '',
+        category: b.data.category || 'BARBERSHOP',
         isMobile: b.data.isMobile,
         houseCallFeeInCents: b.data.houseCallFeeInCents,
         travelRadiusKm: b.data.travelRadiusKm || 10,
@@ -104,7 +105,7 @@ export default function Settings() {
     setError(''); setSaved('')
     try {
       await apiFetch(`/api/shops/${shop.id}/join-requests/${requestId}`, { method: 'PATCH', body: JSON.stringify({ decision }) })
-      setSaved(decision === 'APPROVED' ? 'Barber added to your shop!' : 'Request rejected')
+      setSaved(decision === 'APPROVED' ? 'Stylist added to your shop!' : 'Request rejected')
       await loadAll()
     } catch (e: any) { setError(e.message) }
   }
@@ -139,6 +140,12 @@ export default function Settings() {
             <input className="input" placeholder="Area (e.g. Khomasdal)" value={shopForm.area} onChange={(e) => setShopForm({ ...shopForm, area: e.target.value })} />
             <input className="input" placeholder="Street address" value={shopForm.address} onChange={(e) => setShopForm({ ...shopForm, address: e.target.value })} />
             <input className="input" placeholder="Phone" value={shopForm.phone} onChange={(e) => setShopForm({ ...shopForm, phone: e.target.value })} />
+            <label className="label">Category</label>
+            <select className="input" value={shopForm.category} onChange={(e) => setShopForm({ ...shopForm, category: e.target.value })}>
+              <option value="BARBERSHOP">Barbershop</option>
+              <option value="SALON">Salon</option>
+              <option value="BOTH">Barbershop &amp; Salon</option>
+            </select>
             <textarea className="input" placeholder="Description" value={shopForm.description} onChange={(e) => setShopForm({ ...shopForm, description: e.target.value })} />
             <button className="btn" style={{ width: '100%' }} onClick={createShop}>Create shop</button>
           </div>
@@ -149,6 +156,25 @@ export default function Settings() {
             <div className="card">
               <div style={{ fontWeight: 500 }}>{shop.name}</div>
               <div className="muted">{shop.area} · {shop.address}</div>
+              <label className="label">Category</label>
+              <select
+                className="input"
+                value={shop.category}
+                onChange={async (e) => { await apiFetch(`/api/shops/${shop.id}`, { method: 'PATCH', body: JSON.stringify({ category: e.target.value }) }); await loadAll() }}
+              >
+                <option value="BARBERSHOP">Barbershop</option>
+                <option value="SALON">Salon</option>
+                <option value="BOTH">Barbershop &amp; Salon</option>
+              </select>
+              {shop.subscription && (
+                <div className="muted" style={{ marginTop: 6 }}>
+                  {shop.subscription.status === 'TRIALING'
+                    ? `Free trial — ends ${new Date(shop.subscription.trialEndsAt).toLocaleDateString('en-NA', { dateStyle: 'medium' })}`
+                    : shop.subscription.status === 'ACTIVE'
+                    ? `Subscribed — paid through ${new Date(shop.subscription.currentPeriodEnd).toLocaleDateString('en-NA', { dateStyle: 'medium' })}`
+                    : `Subscription: ${shop.subscription.status}`}
+                </div>
+              )}
             </div>
 
             <div className="card">
@@ -160,7 +186,7 @@ export default function Settings() {
 
             {pendingRequests.length > 0 && (
               <div className="card">
-                <div className="label">Barbers wanting to join</div>
+                <div className="label">Stylists wanting to join</div>
                 {pendingRequests.map((r: any) => (
                   <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                     <div>
@@ -180,9 +206,24 @@ export default function Settings() {
 
         {barber && (
           <div className="card">
-            <div className="label">Your barber profile</div>
+            <div className="label">Your stylist profile</div>
+            {barber.subscription && (
+              <div className="muted" style={{ marginBottom: 10 }}>
+                {barber.subscription.status === 'TRIALING'
+                  ? `Free trial — ends ${new Date(barber.subscription.trialEndsAt).toLocaleDateString('en-NA', { dateStyle: 'medium' })}`
+                  : barber.subscription.status === 'ACTIVE'
+                  ? `Subscribed — paid through ${new Date(barber.subscription.currentPeriodEnd).toLocaleDateString('en-NA', { dateStyle: 'medium' })}`
+                  : `Subscription: ${barber.subscription.status}`}
+              </div>
+            )}
             <ImageUploadField label="Photo" kind="barber-photo" currentUrl={barber.photoUrl} onUploaded={updateBarberPhoto} />
             <textarea className="input" placeholder="Bio" value={barberForm.bio} onChange={(e) => setBarberForm({ ...barberForm, bio: e.target.value })} />
+            <label className="label">Category</label>
+            <select className="input" value={barberForm.category} onChange={(e) => setBarberForm({ ...barberForm, category: e.target.value })}>
+              <option value="BARBERSHOP">Barber</option>
+              <option value="SALON">Salon stylist</option>
+              <option value="BOTH">Both</option>
+            </select>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
               <input type="checkbox" checked={barberForm.isMobile} onChange={(e) => setBarberForm({ ...barberForm, isMobile: e.target.checked })} />
               I offer house calls
