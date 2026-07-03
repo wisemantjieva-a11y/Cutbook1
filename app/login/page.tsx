@@ -4,6 +4,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
 
+export const dynamic = 'force-dynamic'
+
 export default function Login() {
   const router = useRouter()
   const searchParams = useSearchParams()
