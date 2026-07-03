@@ -4,6 +4,8 @@ import { getSessionUser } from '@/lib/auth'
 import { sendSms, bookingConfirmationSms } from '@/lib/sms'
 import { getEffectiveHours } from '@/lib/availability'
 
+export const dynamic = 'force-dynamic'
+
 // POST /api/bookings
 // body: { barberId, serviceId, startTime (ISO), isHouseCall, houseCallAddress, houseCallLat, houseCallLng, paymentMethod: 'online' | 'cash' }
 export async function POST(req: NextRequest) {
