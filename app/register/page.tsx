@@ -5,9 +5,9 @@ import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
 
 const ROLES = [
-  { value: 'CUSTOMER', label: 'I want to book a haircut' },
-  { value: 'SHOP_OWNER', label: 'I own a barbershop' },
-  { value: 'BARBER', label: "I'm a freelance/mobile barber" },
+  { value: 'CUSTOMER', label: 'I want to book an appointment' },
+  { value: 'SHOP_OWNER', label: 'I own a barbershop or salon' },
+  { value: 'BARBER', label: "I'm a freelance/mobile stylist" },
 ]
 
 export default function Register() {
