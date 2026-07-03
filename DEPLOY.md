@@ -76,6 +76,20 @@ Variables, redeploy. None of them require touching code.
   `S3_SECRET_ACCESS_KEY`, and make the bucket public (or put a Cloudflare custom domain in front of
   it) for `S3_PUBLIC_BASE_URL`.
 
+## Updating an already-deployed app
+
+When I give you a new version of the code (like this one, which adds subscription tracking), two
+things need updating — code and, sometimes, the database:
+
+1. **Database changes**: check whether there's a new file in `prisma/manual-deploy/` numbered higher
+   than the last one you ran (e.g. `003_add_subscriptions.sql`, then `004_add_categories.sql`). If so,
+   paste it into Neon's SQL Editor and run it — same as steps 1/5 above, just one file, not the whole
+   thing, and run them **in number order**. Never re-run `001_init_schema.sql` on a database that
+   already has tables; it'll fail trying to recreate them.
+2. **Code changes**: replace the files in your GitHub repo with the new ones (drag-and-drop upload
+   again, or `git pull` if you're using GitHub Desktop). Vercel automatically redeploys whenever the
+   repo's `main` branch changes — no extra step needed there.
+
 ## If something goes wrong
 
 The most common issue is a typo in `DATABASE_URL` (missing `?sslmode=require` at the end for Neon,
