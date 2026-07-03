@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { hashPassword, signSession, sessionCookieOptions } from '@/lib/auth'
 import { endOfCurrentMonth } from '@/lib/subscription'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
