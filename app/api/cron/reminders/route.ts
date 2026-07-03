@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendSms, bookingReminderSms } from '@/lib/sms'
 
+export const dynamic = 'force-dynamic'
+
 const REMINDER_WINDOW_MINUTES = 60 // send a reminder for anything starting within the next hour
 
 // GET /api/cron/reminders
