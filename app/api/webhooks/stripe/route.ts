@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { constructWebhookEvent } from '@/lib/payments'
 import { sendSms, bookingConfirmationSms } from '@/lib/sms'
 
+export const dynamic = 'force-dynamic'
+
 // Stripe requires the raw body for signature verification, so this route
 // must not run through any body-parsing middleware.
 export async function POST(req: NextRequest) {
