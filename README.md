@@ -119,3 +119,5 @@ and put the CLI's printed signing secret into `STRIPE_WEBHOOK_SECRET`.
 Once you're happy with this, delete the old `cutbook-backend` Express folder and the old mock
 `src/pages/OwnerApp.jsx` / `src/pages/Home.jsx` etc. React app - they're superseded by this project and
 kept around would just cause confusion again.
+
+<!-- deployment trigger -->
