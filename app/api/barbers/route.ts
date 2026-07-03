@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
 // crude haversine distance in km
 function distanceKm(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 6371
