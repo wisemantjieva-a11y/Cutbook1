@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth'
 
+export const dynamic = 'force-dynamic'
+
 // POST /api/services  { shopId? , barberId?, name, priceInCents, durationMin, allowsHouseCall }
 export async function POST(req: NextRequest) {
   const user = await getSessionUser(req)
