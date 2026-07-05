@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ success: true, data: shops })
 }
 
-// POST /api/shops — create a shop (must be logged in as SHOP_OWNER)
+// POST /api/shops -- create a shop (must be logged in as SHOP_OWNER)
 export async function POST(req: NextRequest) {
   const user = await getSessionUser(req)
   if (!requireRole(user, ['SHOP_OWNER', 'ADMIN'])) {
@@ -41,10 +41,13 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { name, area, address, phone, whatsapp, description, latitude, longitude } = body
+  const { name, area, address, phone, whatsapp, description, latitude, longitude, category } = body
   if (!name || !area || !address || !phone) {
     return NextResponse.json({ success: false, message: 'name, area, address, phone are required' }, { status: 400 })
   }
+
+  const validCategories = ['BARBERSHOP', 'SALON', 'BOTH']
+  const shopCategory = validCategories.includes(category) ? category : 'BARBERSHOP'
 
   const shop = await prisma.shop.create({
     data: {
@@ -57,6 +60,7 @@ export async function POST(req: NextRequest) {
       description: description || null,
       latitude: latitude ?? null,
       longitude: longitude ?? null,
+      category: shopCategory,
     },
   })
 
