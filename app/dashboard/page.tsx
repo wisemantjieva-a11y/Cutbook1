@@ -130,10 +130,11 @@ export default function Dashboard() {
           <div key={b.id} className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <div>
-                <div style={{ fontWeight: 500 }}>{b.customer.name}</div>
+                <div style={{ fontWeight: 500 }}>{me.role === 'CUSTOMER' ? (b.barber?.user?.name ?? 'Barber') : b.customer.name}</div>
                 <div className="muted">{b.service.name} {b.isHouseCall ? '· 🚗 house call' : ''}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
+                {me.role === 'CUSTOMER' && <div className="muted" style={{ fontSize: 11 }}>{new Date(b.startTime).toLocaleDateString('en-NA', { day: 'numeric', month: 'short' })}</div>}
                 <div style={{ fontWeight: 500 }}>{new Date(b.startTime).toLocaleTimeString('en-NA', { hour: '2-digit', minute: '2-digit' })}</div>
                 <div className="muted">{money(b.totalPriceInCents)}</div>
               </div>
@@ -142,12 +143,16 @@ export default function Dashboard() {
               <span className="badge" style={{ background: STATUS_COLORS[b.status] }}>{b.status}</span>
               {(b.status === 'PENDING' || b.status === 'CONFIRMED') && (
                 <div style={{ display: 'flex', gap: 6 }}>
-                  <button className="btn" style={{ padding: '5px 10px', fontSize: 12 }} onClick={() => changeStatus(b.id, 'COMPLETED')}>Done</button>
-                  <button className="btn btn-outline" style={{ padding: '5px 10px', fontSize: 12 }} onClick={() => changeStatus(b.id, 'NO_SHOW')}>No show</button>
+                  {me.role !== 'CUSTOMER' && (
+                    <>
+                      <button className="btn" style={{ padding: '5px 10px', fontSize: 12 }} onClick={() => changeStatus(b.id, 'COMPLETED')}>Done</button>
+                      <button className="btn btn-outline" style={{ padding: '5px 10px', fontSize: 12 }} onClick={() => changeStatus(b.id, 'NO_SHOW')}>No show</button>
+                    </>
+                  )}
                   <button className="btn btn-danger" style={{ padding: '5px 10px', fontSize: 12 }} onClick={() => changeStatus(b.id, 'CANCELED')}>Cancel</button>
                 </div>
               )}
-              {b.customer.phone && <span className="muted">📞 {b.customer.phone}</span>}
+              {me.role !== 'CUSTOMER' && b.customer.phone && <span className="muted">📞 {b.customer.phone}</span>}
             </div>
           </div>
         ))}
